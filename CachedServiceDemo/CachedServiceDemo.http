@@ -1,0 +1,6 @@
+@CachedServiceDemo_HostAddress = http://localhost:5108
+
+GET {{CachedServiceDemo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
