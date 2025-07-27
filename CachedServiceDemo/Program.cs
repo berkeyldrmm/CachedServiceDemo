@@ -7,7 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddMemoryCache();
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379";
+    options.InstanceName = "Demo_";
+});
+
 builder.Services.AddDbContext<CachedServiceDemoDBContext>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.Decorate<IEmployeeService, CachedEmployeeService>();

@@ -1,25 +1,29 @@
 ﻿using CachedServiceDemo.Abstract;
 using CachedServiceDemo.Dtos;
 using CachedServiceDemo.Entites;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace CachedServiceDemo.Services
 {
     public class CachedEmployeeService : IEmployeeService
     {
         private readonly IEmployeeService _employeeService;
-        private readonly IMemoryCache _memoryCache;
-        public CachedEmployeeService(IEmployeeService employeeService, IMemoryCache memoryCache)
+        private readonly IDistributedCache _distributedCache;
+        public CachedEmployeeService(IEmployeeService employeeService, IDistributedCache distributedCache)
         {
             _employeeService = employeeService;
-            _memoryCache = memoryCache;
+            _distributedCache = distributedCache;
         }
 
         public bool Create(EmployeeDto employeeDto)
         {
             var result = _employeeService.Create(employeeDto);
             if (result)
-                _memoryCache.Remove("employees");
+                _distributedCache.Remove("employees");
 
             return result;
         }
@@ -27,12 +31,15 @@ namespace CachedServiceDemo.Services
         public List<Employee> Get()
         {
             var employees = new List<Employee>();
-            employees = _memoryCache.Get<List<Employee>>("employees");
-            
-            if(employees == null)
+            var json = _distributedCache.GetString("employees");
+            employees = json == null ? null : JsonSerializer.Deserialize<List<Employee>>(json);
+
+            if (employees == null)
             {
                 employees = _employeeService.Get();
-                _memoryCache.Set("employees", employees);
+
+                var jsonEmployees = JsonSerializer.Serialize(employees);
+                _distributedCache.SetString("employees", jsonEmployees);
             }
 
             return employees;
